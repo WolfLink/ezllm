@@ -63,6 +63,29 @@ class Chat:
             "content" : message,
             })
 
+    def print(self):
+        max_name_len = 0
+        for message in self.messages:
+            name = message['role']
+            if len(name) > max_name_len:
+                max_name_len = len(name)
+        max_name_len += 1
+        for message in self.messages:
+            if "tool_calls" in message:
+                msg = None
+                for tool_call in message["tool_calls"]:
+                    if msg is None:
+                        msg = ""
+                    else:
+                        msg += "\n"
+                    msg += f"{tool_call['function']['name']}("
+                    for arg in tool_call['function']['arguments']:
+                        msg += f"{arg}={repr(tool_call['function']['arguments'][arg])}, "
+                    msg += ")"
+            else:
+                msg = message['content']
+            print(f"{message['role']}:{' ' * (max_name_len - len(message['role']))}{msg}\n")
+
     def prompt(self, text, recursion_limit=10):
         if text is not None:
             self.messages.append({

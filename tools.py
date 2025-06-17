@@ -59,7 +59,7 @@ class Tool:
         self.f = f
         docstr_data = parse_docstr(f.__doc__)
         self.desc = docstr_data["desc"]
-        self.name = f.__qualname__
+        self.name = f.__name__
 
         self.parameters = {}
         self.required = []
