@@ -10,7 +10,7 @@ def hello_world_tool(message):
     """
     print(f"Hello World! : {message}")
 
-chat = Chat(model="qwen3:32b")
+chat = Chat(model="gpt-oss:20b")
 chat.add_tool(hello_world_tool)
 #response = chat.prompt("Use the hello_world_tool to send a greeting message!")
 #print(response)
@@ -36,6 +36,7 @@ def roll_dice(number: int, sides: int) -> int:
 
 
 chat.add_tool(roll_dice)
+chat.system("Use your tools to inform your answer whenever possible!")
 response = chat.prompt("I'm playing a dnd game. I cast fireball, which deals 2d6 damage! Does it kill the imp with 5 health left?")
 print(response)
 

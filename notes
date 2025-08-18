@@ -1,0 +1,8 @@
+Commands:
+ollama pull <model name>
+ollama run <model name>
+
+Models of Note:
+qwen2.5:32b (20GB model)
+llama3.2 (2GB model)
+

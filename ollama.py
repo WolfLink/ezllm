@@ -49,6 +49,7 @@ class Chat:
         self.url = url
         self.tools = {}
         self.format = None
+        self.system("If the user asks a question for something that can be verified using your tools, such as a math or science related question, remember to use those tools to inform your answer.")
 
     def add_tool(self, tool):
         assert isinstance(tool, Tool)
@@ -58,10 +59,7 @@ class Chat:
         self.messages = []
     
     def system(self, message):
-        self.messages.append({
-            "role" : "system",
-            "content" : message,
-            })
+        self.system_prompt = message
 
     def print(self):
         max_name_len = 0
@@ -92,9 +90,11 @@ class Chat:
                 "role" : "user",
                 "content" : text,
                 })
+        #payload_messages = self.messages[:-1] + [{"role" : "system",  "content" : self.system}] + [self.messages[-1]]
+        payload_messages = [{"role" : "system", "content" : self.system_prompt}] + self.messages
         payload = {
                 "model" : self.model,
-                "messages" : self.messages,
+                "messages" : payload_messages,
                 "stream" : False,
                 }
         if self.format is not None:

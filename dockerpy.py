@@ -67,7 +67,7 @@ class PythonToolKit(Container):
         apt-get install -y python3 python3-pip python3-venv git
         python3 -m venv .venv
         .venv/bin/pip install --upgrade pip
-        .venv/bin/pip install numpy scipy matplotlib bqskit qiskit qsearch
+        .venv/bin/pip install numpy scipy matplotlib bqskit qiskit qsearch pytest
         """
 
         for line in initial_install_script.split("\n"):
@@ -96,6 +96,10 @@ class PythonToolKit(Container):
 
     def read_file(self, filename):
         return self(f"cat {filename}")
+
+    def delete_file(self, filename):
+        self(f"rm {filename}")
+        return f"Deleted {filename}"
 
     def run_code(self, filename):
         return self(f".venv/bin/python3 {filename}")
