@@ -101,7 +101,11 @@ class Tool:
 
 
     def __call__(self, *args, **kwargs):
-        return self.f(*args, **kwargs)
+        try:
+            return self.f(*args, **kwargs)
+        except TypeError as e:
+            raise RuntimeWarning(f"The LLM did not call the tool correctly. Got '{e}'")
+            return f"{e}"
 
     def dict(self):
         return {

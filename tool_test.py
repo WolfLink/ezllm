@@ -10,7 +10,7 @@ def hello_world_tool(message):
     """
     print(f"Hello World! : {message}")
 
-chat = Chat(model="gpt-oss:20b")
+chat = Chat(model="gpt-oss:120b")
 chat.add_tool(hello_world_tool)
 #response = chat.prompt("Use the hello_world_tool to send a greeting message!")
 #print(response)

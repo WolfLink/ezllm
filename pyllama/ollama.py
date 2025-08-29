@@ -1,5 +1,5 @@
 import requests
-from tools import Tool
+from .tools import Tool
 
 models = [
         "qwen2.5:32b",
@@ -9,9 +9,10 @@ models = [
         "llama3.2:latest",
         "deepseek-r1:32b",
         ]
+default_model = "qwen3:32b"
 
 class Conversation:
-    def __init__(self, model="deepseek-r1:32b", url="http://localhost:11434", hide_thoughts=True):
+    def __init__(self, model=default_model, url="http://localhost:11434", hide_thoughts=True):
         self.model = model
         self.context = None
         self.hide_thoughts = hide_thoughts
@@ -42,13 +43,12 @@ class Conversation:
 
 
 class Chat:
-    def __init__(self, model="deepseek-r1:32b", url="http://localhost:11434", hide_thoughts=True):
+    def __init__(self, model=default_model, url="http://localhost:11434", hide_thoughts=True):
         self.model = model
         self.messages = []
         self.hide_thoughts = hide_thoughts
         self.url = url
         self.tools = {}
-        self.format = None
         self.system("If the user asks a question for something that can be verified using your tools, such as a math or science related question, remember to use those tools to inform your answer.")
 
     def add_tool(self, tool):
@@ -84,7 +84,43 @@ class Chat:
                 msg = message['content']
             print(f"{message['role']}:{' ' * (max_name_len - len(message['role']))}{msg}\n")
 
-    def prompt(self, text, recursion_limit=10):
+    def query(self, message, query):
+        def str_for_type(t):
+            if t is int:
+                return "integer"
+            elif t is bool:
+                return "boolean"
+            elif t is float:
+                return "number"
+            else:
+                return "string"
+        if isinstance(query, dict):
+            properties = dict()
+            for key in query:
+                if key in ["required", "optional"]:
+                    continue
+                properties[key] = {"type" : str_for_type(query[key])}
+            if "required" in query:
+                required = query["required"]
+            elif "optional" in query:
+                required = [k for k in query if k not in query["optional"]]
+            else:
+                required = [k for k in query]
+        else:
+            properties = dict()
+            required = []
+            for entry in query:
+                required.append(entry)
+                properties[entry] = {"type" : "string"}
+
+        structure = {
+                    "type" : "object",
+                    "properties" : properties,
+                    "required" : required,
+                    }
+        return self.prompt(message, structure=structure)
+
+    def prompt(self, text, recursion_limit=10, structure=None, suffix=None):
         if text is not None:
             self.messages.append({
                 "role" : "user",
@@ -97,8 +133,8 @@ class Chat:
                 "messages" : payload_messages,
                 "stream" : False,
                 }
-        if self.format is not None:
-            payload["format"] = self.format
+        if structure is not None:
+            payload["format"] = structure
         if len(self.tools) > 0 and recursion_limit > 0:
             tooldata = []
             for toolname in self.tools:

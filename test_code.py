@@ -1,10 +1,10 @@
-from ollama import Chat
-from dockerpy import PythonToolKit
+from pyllama import Chat
+from pyllama.dockerpy import PythonToolKit
 
 
 toolkit = PythonToolKit()
 #toolkit.install_python()
-chat = Chat("qwen3:32b")
+chat = Chat()
 #chat = Chat("devstral:latest")
 for tool in toolkit.get_tools():
     chat.add_tool(tool)
@@ -32,4 +32,4 @@ toolkit.write_file("circuit.qasm", """
         """
                    )
 chat.prompt("I have a quantum circuit in OPENQASM 2.0 format saved as circuit.qasm. I would like to reduce the number of CNOT gates in this circuit. Can you perform this circuit optimziation? Let me know what the final CNOT count you arrive at is.")
-hat.print()
+chat.print()
