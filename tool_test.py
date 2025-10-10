@@ -1,5 +1,5 @@
-from ollama import Chat
-from tools import Tool
+from pyllama import Chat
+from pyllama.tools import Tool
 
 @Tool
 def hello_world_tool(message):

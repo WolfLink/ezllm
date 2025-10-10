@@ -1,46 +1,7 @@
 import requests
 from .tools import Tool
 
-models = [
-        "qwen2.5:32b",
-        "codellama:34b",
-        "qwen2.5-coder:32b",
-        "qwen3:32b",
-        "llama3.2:latest",
-        "deepseek-r1:32b",
-        ]
-default_model = "qwen3:32b"
-
-class Conversation:
-    def __init__(self, model=default_model, url="http://localhost:11434", hide_thoughts=True):
-        self.model = model
-        self.context = None
-        self.hide_thoughts = hide_thoughts
-        self.url = url
-
-    def memory_wipe(self):
-        self.context = None
-
-    def prompt(self, text):
-        payload = {
-                "model" : self.model,
-                "prompt" : text,
-                "stream" : False,
-                }
-        if self.context is not None:
-            payload["context"] = self.context
-
-        data = requests.post(self.url + "/api/generate", json=payload).json()
-        response = data["response"]
-        if self.hide_thoughts and "deepseek" in self.model:
-            parts = response.split("</think>")
-            if len(parts) > 1:
-                response = parts[1]
-            else:
-                response = parts[0]
-        self.context = data["context"]
-        return response
-
+default_model = "qwen3:latest"
 
 class Chat:
     def __init__(self, model=default_model, url="http://localhost:11434", hide_thoughts=True):
@@ -49,7 +10,6 @@ class Chat:
         self.hide_thoughts = hide_thoughts
         self.url = url
         self.tools = {}
-        self.system("If the user asks a question for something that can be verified using your tools, such as a math or science related question, remember to use those tools to inform your answer.")
 
     def add_tool(self, tool):
         assert isinstance(tool, Tool)
@@ -61,13 +21,14 @@ class Chat:
     def system(self, message):
         self.system_prompt = message
 
-    def print(self):
+    def get_log(self):
         max_name_len = 0
         for message in self.messages:
             name = message['role']
             if len(name) > max_name_len:
                 max_name_len = len(name)
         max_name_len += 1
+        logstr = ""
         for message in self.messages:
             if "tool_calls" in message:
                 msg = None
@@ -82,7 +43,11 @@ class Chat:
                     msg += ")"
             else:
                 msg = message['content']
-            print(f"{message['role']}:{' ' * (max_name_len - len(message['role']))}{msg}\n")
+            logstr += f"{message['role']}:{' ' * (max_name_len - len(message['role']))}{msg}\n\n"
+        return logstr
+
+    def print(self):
+        print(self.get_log())
 
     def query(self, message, query):
         def str_for_type(t):
@@ -126,8 +91,7 @@ class Chat:
                 "role" : "user",
                 "content" : text,
                 })
-        #payload_messages = self.messages[:-1] + [{"role" : "system",  "content" : self.system}] + [self.messages[-1]]
-        payload_messages = [{"role" : "system", "content" : self.system_prompt}] + self.messages
+        payload_messages = self.messages
         payload = {
                 "model" : self.model,
                 "messages" : payload_messages,
