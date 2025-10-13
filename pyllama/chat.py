@@ -1,19 +1,47 @@
 import requests
+from ollama import Client
 from .tools import Tool
+import json
+from .kickstart import kickstart
 
 default_model = "qwen3:latest"
 
 class Chat:
     def __init__(self, model=default_model, url="http://localhost:11434", hide_thoughts=True):
+        self.client = Client(host=url)
         self.model = model
         self.messages = []
         self.hide_thoughts = hide_thoughts
         self.url = url
         self.tools = {}
+        self.container = kickstart()
 
     def add_tool(self, tool):
         assert isinstance(tool, Tool)
         self.tools[tool.name] = tool
+
+    def _ensure_model(self):
+        for model in self.client.list().models:
+            if model.model == self.model:
+                return
+        print(f"Pulling model {self.model}...")
+        self.client.pull(self.model)
+        print(f"Successfully pulled {self.model}.")
+
+    def to_json(self):
+        return json.dumps({
+                "url" : self.url,
+                "model" : self.model,
+                "messages" : self.messages,
+                "hide_thoughts" : self.hide_thoughts,
+                })
+
+    @classmethod
+    def from_json(cls, datastr):
+        data = json.loads(datastr)
+        new_chat = cls(model=data["model"], url=data["url"], hide_thoughts=data["hide_thoughts"])
+        new_chat.messages = data["messages"]
+        return new_chat
 
     def memory_wipe(self):
         self.messages = []
@@ -86,6 +114,59 @@ class Chat:
         return self.prompt(message, structure=structure)
 
     def prompt(self, text, recursion_limit=10, structure=None, suffix=None):
+        self._ensure_model()
+        if text is not None:
+            self.messages.append({
+                "role" : "user",
+                "content" : text,
+                })
+        payload_messages = self.messages
+        tooldata = []
+        if len(self.tools) > 0 and recursion_limit > 0:
+            for toolname in self.tools:
+                tool = self.tools[toolname]
+                tooldata.append({"type" : "function", "function" : tool.dict()})
+        data = self.client.chat(model=self.model, messages=self.messages, format=structure, tools=tooldata)
+        if "context" in data:
+            print(f"Got context: {self.context}")
+        if "message" in data:
+            response = data["message"]
+            self.messages.append(response)
+
+            if "tool_calls" in response and len(response["tool_calls"]) > 0:
+                for tool_call in response["tool_calls"]:
+                    if not "function" in tool_call:
+                        print(f"UNKNOWN TOOL CALL: {tool_call}")
+                    tool_call = tool_call["function"]
+                    if tool_call["name"] not in self.tools:
+                        print(f"UNKNOWN TOOL: {tool_call}")
+                    kwargs = tool_call["arguments"]
+                    result = self.tools[tool_call["name"]](**kwargs)
+                    self.messages.append({
+                        "role" : "tool",
+                        "content" : f"{result}",
+                        "name" : tool_call["name"],
+                        })
+                if recursion_limit > 0:
+                    return self.prompt(None, recursion_limit-1)
+
+
+            text = response["content"]
+            if self.hide_thoughts and "<think>" in text:
+                parts = text.split("</think>")
+                if len(parts) > 1:
+                    text = parts[1]
+                else:
+                    text = parts[0]
+
+            return text
+        else:
+            for message in self.messages:
+                print(message)
+            print(data)
+            return data
+
+    def prompt_old(self, text, recursion_limit=10, structure=None, suffix=None):
         if text is not None:
             self.messages.append({
                 "role" : "user",

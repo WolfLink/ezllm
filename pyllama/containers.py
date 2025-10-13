@@ -4,22 +4,28 @@ import io
 from .tools import Tool
 
 class Container(Tool):
-    def __init__(self, name=None, verbose=False):
+    def __init__(self, name=None, container="ubuntu", verbose=False, gpu=True, ports=[], volumes={}):
         self.verbose = verbose
         self.client = docker.from_env()
         self.name = "run_command"
-        if name is None:
-            self.container = self.client.containers.run("ubuntu", auto_remove=True, detach=True, stdin_open=True)
-        else:
-            try:
-                self.container = self.client.containers.get(name)
-                self.container.restart()
-            except docker.errors.NotFound:
-                self.container = self.client.containers.run("ubuntu", auto_remove=False, detach=True, stdin_open=True, name=name)
-                self._initial_installs()
+        needs_start = True
+        try:
+            self.container = self.client.containers.get(name)
+            self.container.restart()
+            needs_start = False
+        except docker.errors.NotFound:
+            needs_start = True
+        if needs_start:
+            device_requests = []
+            if gpu:
+                device_requests.append(docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]]))
+            port_d = {}
+            for port in ports:
+                for protocol in ["tcp", "udp"]:
+                    port_d[f'{port}/{protocol}'] = port
 
-    def _initial_installs(self):
-        pass
+            self.client.images.pull(container)
+            self.container = self.client.containers.run(container, auto_remove=True, detach=True, stdin_open=True, name=name, device_requests=device_requests, ports=port_d, volumes=volumes)
 
     def __call__(self, cmd):
         cmd = f'/bin/bash -c "{cmd}"'

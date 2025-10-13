@@ -112,7 +112,6 @@ class Tool:
                 "name" : self.name,
                 "description" : self.desc,
                 "parameters" : {
-                    "type" : "object",
                     "properties" : self.parameters,
                     "required" : self.required,
                     },
