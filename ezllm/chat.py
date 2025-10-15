@@ -3,6 +3,7 @@ from ollama import Client
 from .tools import Tool
 import json
 from .kickstart import kickstart
+from time import sleep
 
 default_model = "qwen3:latest"
 
@@ -21,9 +22,18 @@ class Chat:
         self.tools[tool.name] = tool
 
     def _ensure_model(self):
-        for model in self.client.list().models:
-            if model.model == self.model:
-                return
+        timeout = 0.1
+        while timeout <= 2:
+            try:
+                for model in self.client.list().models:
+                    if model.model == self.model:
+                        return
+                break
+            except:
+                sleep(timeout)
+                timeout *= 2
+                if timeout > 2:
+                    raise
         print(f"Pulling model {self.model}...")
         self.client.pull(self.model)
         print(f"Successfully pulled {self.model}.")
