@@ -46,6 +46,15 @@ class Chat:
                 "hide_thoughts" : self.hide_thoughts,
                 })
 
+    def load_json(self, datastr):
+        data = json.loads(datastr)
+        self.model = data["model"]
+        if self.url != data["url"]:
+            self.url = data["url"]
+            self.client = Client(host=self.url)
+        self.hide_thoughts = data["hide_thoughts"]
+        self.messages = data["messages"]
+
     @classmethod
     def from_json(cls, datastr):
         data = json.loads(datastr)
@@ -141,9 +150,9 @@ class Chat:
             print(f"Got context: {self.context}")
         if "message" in data:
             response = data["message"]
-            self.messages.append(response)
+            self.messages.append(response.dict())
 
-            if "tool_calls" in response and len(response["tool_calls"]) > 0:
+            if "tool_calls" in response and response["tool_calls"] is not None and len(response["tool_calls"]) > 0:
                 for tool_call in response["tool_calls"]:
                     if not "function" in tool_call:
                         print(f"UNKNOWN TOOL CALL: {tool_call}")
@@ -155,7 +164,7 @@ class Chat:
                     self.messages.append({
                         "role" : "tool",
                         "content" : f"{result}",
-                        "name" : tool_call["name"],
+                        "tool_name" : tool_call["name"],
                         })
                 if recursion_limit > 0:
                     return self.prompt(None, recursion_limit-1)
