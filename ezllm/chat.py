@@ -8,18 +8,23 @@ from time import sleep
 default_model = "qwen3:latest"
 
 class Chat:
-    def __init__(self, model=default_model, url="http://localhost:11434", hide_thoughts=True):
+    def __init__(self, model=default_model, url=None, hide_thoughts=True):
+        self.url = url
+        if url is None:
+            self.container = kickstart()
+            url = "http://localhost:11434"
         self.client = Client(host=url)
         self.model = model
         self.messages = []
         self.hide_thoughts = hide_thoughts
-        self.url = url
         self.tools = {}
-        self.container = kickstart()
 
-    def add_tool(self, tool):
-        assert isinstance(tool, Tool)
-        self.tools[tool.name] = tool
+    def add_tools(self, *tools):
+        for tool in tools:
+            if isinstance(tool, Tool):
+                self.tools[tool.name] = tool
+            elif hasattr(tool, "add_all_tools"):
+                tool.add_all_tools(self)
 
     def _ensure_model(self):
         timeout = 0.1
@@ -51,6 +56,10 @@ class Chat:
         self.model = data["model"]
         if self.url != data["url"]:
             self.url = data["url"]
+            url = self.url
+            if url is None:
+                self.container = kickstart()
+                url = "http://localhost:11434"
             self.client = Client(host=self.url)
         self.hide_thoughts = data["hide_thoughts"]
         self.messages = data["messages"]
@@ -77,7 +86,7 @@ class Chat:
         max_name_len += 1
         logstr = ""
         for message in self.messages:
-            if "tool_calls" in message:
+            if "tool_calls" in message and message["tool_calls"] is not None:
                 msg = None
                 for tool_call in message["tool_calls"]:
                     if msg is None:
@@ -150,7 +159,14 @@ class Chat:
             print(f"Got context: {self.context}")
         if "message" in data:
             response = data["message"]
-            self.messages.append(response.dict())
+            if "tool_calls" in response and response["tool_calls"] is not None and len(response["tool_calls"]) > 0:
+                try:
+                    response["tool_calls"] = [{'function' : {'name' : tool_call.function.name, "arguments" : tool_call.function.arguments}} for tool_call in response["tool_calls"]]
+                except:
+                    print(response['tool_calls'])
+            mdict = {key: value for key, value in response if value is not None}
+            self.messages.append(mdict)
+
 
             if "tool_calls" in response and response["tool_calls"] is not None and len(response["tool_calls"]) > 0:
                 for tool_call in response["tool_calls"]:
@@ -184,63 +200,3 @@ class Chat:
                 print(message)
             print(data)
             return data
-
-    def prompt_old(self, text, recursion_limit=10, structure=None, suffix=None):
-        if text is not None:
-            self.messages.append({
-                "role" : "user",
-                "content" : text,
-                })
-        payload_messages = self.messages
-        payload = {
-                "model" : self.model,
-                "messages" : payload_messages,
-                "stream" : False,
-                }
-        if structure is not None:
-            payload["format"] = structure
-        if len(self.tools) > 0 and recursion_limit > 0:
-            tooldata = []
-            for toolname in self.tools:
-                tool = self.tools[toolname]
-                tooldata.append({"type" : "function", "function" : tool.dict()})
-            payload["tools"] = tooldata
-
-        data = requests.post(self.url + "/api/chat", json=payload).json()
-        if "message" in data:
-            response = data["message"]
-            self.messages.append(response)
-
-            if "tool_calls" in response and len(response["tool_calls"]) > 0:
-                for tool_call in response["tool_calls"]:
-                    if not "function" in tool_call:
-                        print(f"UNKNOWN TOOL CALL: {tool_call}")
-                    tool_call = tool_call["function"]
-                    if tool_call["name"] not in self.tools:
-                        print(f"UNKNOWN TOOL: {tool_call}")
-                    kwargs = tool_call["arguments"]
-                    result = self.tools[tool_call["name"]](**kwargs)
-                    self.messages.append({
-                        "role" : "tool",
-                        "content" : f"{result}",
-                        "name" : tool_call["name"],
-                        })
-                if recursion_limit > 0:
-                    return self.prompt(None, recursion_limit-1)
-
-
-            text = response["content"]
-            if self.hide_thoughts and "<think>" in text:
-                parts = text.split("</think>")
-                if len(parts) > 1:
-                    text = parts[1]
-                else:
-                    text = parts[0]
-
-            return text
-        else:
-            for message in self.messages:
-                print(message)
-            print(data)
-            return data
-

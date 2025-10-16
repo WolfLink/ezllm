@@ -11,7 +11,7 @@ class Container(Tool):
         needs_start = True
         try:
             self.container = self.client.containers.get(name)
-            self.container.restart()
+            self.container.reload()
             needs_start = False
         except docker.errors.NotFound:
             needs_start = True
@@ -31,12 +31,8 @@ class Container(Tool):
         cmd = f'/bin/bash -c "{cmd}"'
         return self.container.exec_run(cmd).output.decode()
 
-    def __del__(self):
-        try:
-            self.container.stop()
-        except:
-            if self.verbose:
-                print("Containers might not be cleaned up properly.")
+    def stop(self):
+        self.container.stop()
 
     def remove(self):
         self.container.remove()
@@ -56,7 +52,9 @@ class Container(Tool):
 
 
 
-
+# This is a prototype for adding a docker container as a tool to let the LLM run arbitrary code
+# There are some security concerns with allowing an LLM to run arbitrary code, even inside a container like this
+# Use at your own risk.
 class PythonToolKit(Container):
     def __init__(self):
         super().__init__(name="dockerpy")

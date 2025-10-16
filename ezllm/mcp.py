@@ -24,7 +24,10 @@ class MCPClient():
 
     async def populate_tool_data(self):
         async with self.client:
-            tool_list = await self.client.list_tools()
+            try:
+                tool_list = await self.client.list_tools()
+            except:
+                tool_list = []
             for tool in tool_list:
                 self.tool_data.append({
                     "name" : tool.name,
@@ -33,7 +36,10 @@ class MCPClient():
                     "kind" : "tool",
                     })
 
-            resource_list = await self.client.list_resources()
+            try:
+                resource_list = await self.client.list_resources()
+            except:
+                resource_list = []
             for resource in resource_list:
                 self.tool_data.append({
                     "name" : resource.name,
@@ -60,5 +66,4 @@ class MCPClient():
         return [MCPTool(self, data) for data in self.tool_data]
 
     def add_all_tools(self, chat):
-        for tool in self.get_tools():
-            chat.add_tool(tool)
+        chat.add_tools(*self.get_tools())
