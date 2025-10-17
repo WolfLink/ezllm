@@ -35,36 +35,10 @@ chat.print()
 # You can also add MCPs as tools
 from ezllm import MCPClient
 
-client = MCPClient("https://mcp.deepwiki.com/mcp")
+client = MCPClient("https://remote.mcpservers.org/fetch/mcp")
 chat.add_tools(client)
-#result = chat.prompt("How can I easily use local llms using https://github.com/WolfLink/ezllm ?")
-result = chat.prompt("How could I find a Toffoli circuit with a minimum number of T gates using https://github.com/WolfLink/ntro-beta ?")
+result = chat.prompt("How can I easily use local llms using https://github.com/WolfLink/ezllm ? Please look at the README from that github and explain it to me.")
 print(result)
-
-
-
-def find_weirdness(data, level=0):
-    traceback = None
-    if type(data) is dict:
-        for key in data:
-            result = find_weirdness(data[key], level + 1)
-            if result is not None:
-                if traceback is None:
-                    traceback = ""
-                traceback += "\t" * level + f"{key}:\n" + result
-    elif type(data) is list:
-        for i in range(len(data)):
-            result = find_weirdness(data[i], level + 1)
-            if result is not None:
-                if traceback is None:
-                    traceback = ""
-                traceback += "\t" * level + f"{i}:\n" + result
-    elif type(data) in [int, str, float]:
-        return None
-    else:
-        return "\t" * level + f"{type(data)}:\t{data}"
-    if traceback is not None:
-        return traceback
 
 # There are other options for adding MCPs
 # This support is built on top of FastMCP, so see https://gofastmcp.com/clients/client for documentation of all the ways you can provide an MCP.

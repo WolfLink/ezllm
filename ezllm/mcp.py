@@ -53,7 +53,10 @@ class MCPClient():
         async with self.client:
             if tool.kind == "tool":
                 result = await self.client.call_tool(tool.name, kwargs)
-                return result.structured_content
+                if result.structured_content is not None:
+                    return result.structured_content
+                else:
+                    return result.content
             elif tool.kind == "resource":
                 result = await self.client.read_resource(tool.tooldata["uri"])
                 return result
