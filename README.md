@@ -27,8 +27,6 @@ If you have an Nvidia GPU that you would like to use for accelerating LLMs, you 
 
 https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 
-chat.print()
-
 ## EZLLM
 Once you have installed the prerequisites, you can install ezllm with pip:
 ```bash
@@ -83,7 +81,7 @@ from ezllm import Chat, MCPClient
 
 client = MCPClient("https://remote.mcpservers.org/fetch/mcp")
 chat.add_tools(client)
-result = chat.prompt("How can I easily use local llms using https://github.com/WolfLink/ezllm ?")
+result = chat.prompt("How can I easily use local llms using https://github.com/WolfLink/ezllm ? Look at the README from that github and explain it to me.")
 print(result)
 ```
 There are other options for adding MCPs, such as using a passing in the JSON configuration for an MCP client as a string.
