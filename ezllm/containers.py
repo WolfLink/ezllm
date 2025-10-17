@@ -25,7 +25,10 @@ class Container(Tool):
                     port_d[f'{port}/{protocol}'] = port
 
             self.client.images.pull(container)
-            self.container = self.client.containers.run(container, auto_remove=True, detach=True, stdin_open=True, name=name, device_requests=device_requests, ports=port_d, volumes=volumes)
+            try:
+                self.container = self.client.containers.run(container, auto_remove=True, detach=True, stdin_open=True, name=name, device_requests=device_requests, ports=port_d, volumes=volumes)
+            except:
+                self.container = self.client.containers.run(container, auto_remove=True, detach=True, stdin_open=True, name=name, ports=port_d, volumes=volumes)
 
     def __call__(self, cmd):
         cmd = f'/bin/bash -c "{cmd}"'
