@@ -27,7 +27,6 @@ If you have an Nvidia GPU that you would like to use for accelerating LLMs, you 
 
 https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 
-# You can print the whole conversation in a nicely formatted way
 chat.print()
 
 ## EZLLM
@@ -51,7 +50,7 @@ You can choose a specific model (the default is qwen3:latest).
 ```python
 chat = Chat("qwen3:1.7b")
 ```
-You can print a formatted chat log with `print`
+You can print a formatted chat log with `print`.
 ```python3
 chat.print()
 ```
