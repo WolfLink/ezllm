@@ -37,7 +37,7 @@ from ezllm import MCPClient
 
 client = MCPClient("https://remote.mcpservers.org/fetch/mcp")
 chat.add_tools(client)
-result = chat.prompt("How can I easily use local llms using https://github.com/WolfLink/ezllm ? Please look at the README from that github and explain it to me.")
+result = chat.prompt("How can I easily use local llms using ezllm? Please use the fetch tool to look at the README from that github repo and explain it to me. Use this link: https://raw.githubusercontent.com/WolfLink/ezllm/refs/heads/main/README.md")
 print(result)
 
 # There are other options for adding MCPs
