@@ -48,7 +48,7 @@ from ezllm import Chat
 chat = Chat()
 response = chat.prompt("Hello World")
 ```
-You can choose a specific model (the default is qwen3:latest).
+You can choose a specific model (the default is qwen3:latest). You can find more models [at Ollama's website](https://ollama.com/search).
 ```python
 chat = Chat("qwen3:1.7b")
 ```
@@ -88,7 +88,7 @@ chat.add_tools(client)
 result = chat.prompt("How can I easily use local llms using https://github.com/WolfLink/ezllm ? Look at the README from that github and explain it to me.")
 print(result)
 ```
-There are other options for adding MCPs, such as using a passing in the JSON configuration for an MCP client as a string.
+There are other options for adding MCPs, such as passing in the JSON configuration for an MCP client as a string.
 This support is built on top of FastMCP, so see https://gofastmcp.com/clients/client for documentation of all the ways you can provide an MCP.
 
 
