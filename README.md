@@ -10,6 +10,10 @@ response = chat.prompt("Hello World")
 print(response)
 ```
 
+EZLLM is designed for simplifying the process of incorporating LLMs into a programming project through automated prompting and tool usage, enabling LLMs to perform complex tasks on their own. EZLLM allows you to send message to and receive the output from LLMs, and provide them your Python code as tools, with only a few lines of code.
+
+EZLLM is built on top of [Ollama](https://ollama.com/), which provides a free and open-source way to locally host many different LLMs. EZLLM runs Ollama inside a [Docker container](https://docs.docker.com/engine/install/). Python functions can be added directly as tools using `ezllm.Tool` but you can also add MCPs, with support built using [FastMCP](https://gofastmcp.com/getting-started/welcome).
+
 
 # Installation
 ## Docker
