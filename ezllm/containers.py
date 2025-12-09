@@ -25,6 +25,12 @@ class Container(Tool):
                     port_d[f'{port}/{protocol}'] = port
 
             self.client.images.pull(container)
+            if gpu:
+                try:
+                    self.container = self.client.containers.run(container, auto_remove=True, detach=True, stdin_open=True, name=name, device_requests=device_requests, ports=port_d, volumes=volumes, runtime="nvidia")
+                    return
+                except:
+                    pass
             try:
                 self.container = self.client.containers.run(container, auto_remove=True, detach=True, stdin_open=True, name=name, device_requests=device_requests, ports=port_d, volumes=volumes)
             except:
