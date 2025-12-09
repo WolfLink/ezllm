@@ -18,6 +18,7 @@ class Chat:
         self.messages = []
         self.hide_thoughts = hide_thoughts
         self.tools = {}
+        self.system_prompt = None
 
     def add_tools(self, *tools):
         for tool in tools:
@@ -149,12 +150,14 @@ class Chat:
                 "content" : text,
                 })
         payload_messages = self.messages
+        if self.system_prompt is not None:
+            payload_messages = [{"role" : "system", "content" : self.system_prompt}] + payload_messages
         tooldata = []
         if len(self.tools) > 0 and recursion_limit > 0:
             for toolname in self.tools:
                 tool = self.tools[toolname]
                 tooldata.append({"type" : "function", "function" : tool.dict()})
-        data = self.client.chat(model=self.model, messages=self.messages, format=structure, tools=tooldata)
+        data = self.client.chat(model=self.model, messages=payload_messages, format=structure, tools=tooldata)
         if "context" in data:
             print(f"Got context: {self.context}")
         if "message" in data:
