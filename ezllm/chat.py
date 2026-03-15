@@ -5,14 +5,14 @@ import json
 from .kickstart import kickstart
 from time import sleep
 
-default_model = "qwen3:latest"
+default_model = "qwen3.5:latest"
 
 class Chat:
     def __init__(self, model=default_model, url=None, hide_thoughts=True):
         self.url = url
         if url is None:
-            self.container = kickstart()
             url = "http://localhost:11434"
+            #self.container = kickstart()
         self.client = Client(host=url)
         self.model = model
         self.messages = []
@@ -29,17 +29,39 @@ class Chat:
 
     def _ensure_model(self):
         timeout = 0.1
-        while timeout <= 2:
-            try:
-                for model in self.client.list().models:
-                    if model.model == self.model:
-                        return
-                break
-            except:
-                sleep(timeout)
-                timeout *= 2
-                if timeout > 2:
-                    raise
+        try:
+            while timeout <= 2:
+                try:
+                    for model in self.client.list().models:
+                        if model.model == self.model:
+                            return
+                    break
+                except:
+                    sleep(timeout)
+                    timeout *= 2
+                    if timeout > 2:
+                        raise
+        except:
+            print("Failed to connect to the ollama server.")
+            if self.url in [None, "http://localhost:11434"]:
+                print("Attempting to start an ollama docker container...")
+                self.container = kickstart()
+            else:
+                raise
+            print("Connecting to the docker container...")
+            while timeout <= 2:
+                try:
+                    for model in self.client.list().models:
+                        if model.model == self.model:
+                            return
+                    break
+                except:
+                    sleep(timeout)
+                    timeout *= 2
+                    if timeout > 2:
+                        print("Failed to connect to the ollama docker container.")
+                        raise
+
         print(f"Pulling model {self.model}...")
         self.client.pull(self.model)
         print(f"Successfully pulled {self.model}.")
@@ -142,13 +164,20 @@ class Chat:
                     }
         return self.prompt(message, structure=structure)
 
-    def prompt(self, text, recursion_limit=10, structure=None, suffix=None):
+    def prompt(self, text, recursion_limit=10, structure=None, images=None, suffix=None):
         self._ensure_model()
+
+        # process the user message
+        user_message = {"role" : "user"}
         if text is not None:
-            self.messages.append({
-                "role" : "user",
-                "content" : text,
-                })
+            user_message["content"] = text
+
+        if images is not None:
+            user_message["images"] = images
+
+        if "content" in user_message or "images" in user_message:
+            self.messages.append(user_message)
+
         payload_messages = self.messages
         if self.system_prompt is not None:
             payload_messages = [{"role" : "system", "content" : self.system_prompt}] + payload_messages
