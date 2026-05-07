@@ -108,3 +108,9 @@ You can also load the chat data into an existing `Chat` object. This will replac
 ```python
 chat.load_json(chatdata)
 ```
+
+
+## Acknowledgement
+
+This material is based upon work supported by the National
+Science Foundation under Award No. 2419204.
