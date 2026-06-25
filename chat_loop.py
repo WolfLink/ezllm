@@ -1,8 +1,8 @@
-from ezllm import Chat, attachments
+from ezllm import Chat
 from rich.console import Console
 from rich.markdown import Markdown
 
-chat = Chat()
+chat = Chat("qwen3.5:35b", hide_thoughts=False)
 console = Console()
 
 def chat_loop():

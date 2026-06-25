@@ -1,13 +1,18 @@
 import inspect
+import json
 
 
 type_translations = {
         str : "string",
         int : "integer",
         float : "double",
+        bool : "bool",
         None : "none",
         type(None) : "none",
         }
+inverse_type_translations = dict()
+for t in type_translations:
+    inverse_type_translations[type_translations[t]] = t
 
 def parse_docstr(docstr):
     if ":" not in docstr:
@@ -51,8 +56,6 @@ def parse_docstr(docstr):
                     "types" : param_types,
                     }
     return {"desc" : main_desc, "params" : params, "return" : rval}
-
-
 
 class Tool:
     def __init__(self, f):
@@ -100,12 +103,25 @@ class Tool:
                 self.rval["types"] = type_translations[rtype]
 
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, args):
+        # parse kwargs and try to force it towards the expected behavior
+        resp = f"Called {self.name}({args})"
+        print(resp)
+        #print(self.parameters)
+        kwargs = dict()
+        leftovers = []
+        for k in self.parameters:
+            if k in args:
+                try:
+                    kwargs[k] = inverse_type_translations[self.parameters[k]['type']](args[k])
+                except ValueError as e:
+                    print(f"The LLM did not call the tool correctly. Got '{e}'")
+                    return f"The tool was not called correctly: {e}"
         try:
-            return self.f(*args, **kwargs)
+            return self.f(**kwargs)
         except TypeError as e:
-            raise RuntimeWarning(f"The LLM did not call the tool correctly. Got '{e}'")
-            return f"{e}"
+            print(f"The LLM did not call the tool correctly. Got '{e}'")
+            return f"The tool was not called correctly: {e}"
 
     def dict(self):
         return {

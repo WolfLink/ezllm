@@ -164,7 +164,7 @@ class Chat:
                     }
         return self.prompt(message, structure=structure)
 
-    def prompt(self, text, recursion_limit=10, structure=None, images=None, suffix=None):
+    def prompt(self, text, structure=None, images=None, suffix=None):
         self._ensure_model()
 
         # process the user message
@@ -182,15 +182,18 @@ class Chat:
         if self.system_prompt is not None:
             payload_messages = [{"role" : "system", "content" : self.system_prompt}] + payload_messages
         tooldata = []
-        if len(self.tools) > 0 and recursion_limit > 0:
-            for toolname in self.tools:
-                tool = self.tools[toolname]
-                tooldata.append({"type" : "function", "function" : tool.dict()})
-        data = self.client.chat(model=self.model, messages=payload_messages, format=structure, tools=tooldata)
+        for toolname in self.tools:
+            tool = self.tools[toolname]
+            tooldata.append({"type" : "function", "function" : tool.dict()})
+
+        data = self.client.chat(model=self.model, messages=payload_messages, format=structure, tools=tooldata, think=True)
         if "context" in data:
             print(f"Got context: {self.context}")
         if "message" in data:
             response = data["message"]
+            if "thinking" in response and not self.hide_thoughts:
+                print(response["thinking"])
+
             if "tool_calls" in response and response["tool_calls"] is not None and len(response["tool_calls"]) > 0:
                 try:
                     response["tool_calls"] = [{'function' : {'name' : tool_call.function.name, "arguments" : tool_call.function.arguments}} for tool_call in response["tool_calls"]]
@@ -204,27 +207,27 @@ class Chat:
                 for tool_call in response["tool_calls"]:
                     if not "function" in tool_call:
                         print(f"UNKNOWN TOOL CALL: {tool_call}")
+                        self.messages.append({
+                            "role" : "tool",
+                            "content" : f"UNKNOWN TOOL CALL: {tool_call}",
+                            "tool_name" : "system",
+                            })
+                        continue
                     tool_call = tool_call["function"]
                     if tool_call["name"] not in self.tools:
                         print(f"UNKNOWN TOOL: {tool_call}")
-                    kwargs = tool_call["arguments"]
-                    result = self.tools[tool_call["name"]](**kwargs)
+                        self.messages.append({
+                            "role" : "tool",
+                            "content" : f"UNKNOWN TOOL: {tool_call}",
+                            "tool_name" : "system",
+                            })
+                        continue
+                    result = self.tools[tool_call["name"]](tool_call["arguments"])
                     self.messages.append({
                         "role" : "tool",
                         "content" : f"{result}",
                         "tool_name" : tool_call["name"],
                         })
-                if recursion_limit > 0:
-                    return self.prompt(None, recursion_limit-1)
-
-
-            text = response["content"]
-            if self.hide_thoughts and "<think>" in text:
-                parts = text.split("</think>")
-                if len(parts) > 1:
-                    text = parts[1]
-                else:
-                    text = parts[0]
 
             return text
         else:
